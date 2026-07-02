@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenBook</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>OpenBook</h1>
+        <p>Read local PDFs privately in your browser.</p>
+      </div>
+
+      <button class="theme-toggle" id="themeToggle" type="button">
+        Dark mode
+      </button>
+    </header>
+
+    <main class="app-shell">
+      <section class="controls" aria-label="PDF controls">
+        <label class="file-picker">
+          <span>Open PDF</span>
+          <input id="fileInput" type="file" accept="application/pdf" />
+        </label>
+
+        <div class="page-controls">
+          <button type="button" disabled>Previous</button>
+          <span>Page 0 of 0</span>
+          <button type="button" disabled>Next</button>
+        </div>
+
+        <div class="zoom-controls">
+          <button type="button" disabled>Zoom out</button>
+          <button type="button" disabled>Reset</button>
+          <button type="button" disabled>Zoom in</button>
+        </div>
+      </section>
+
+      <section class="viewer" aria-label="PDF viewer">
+        <div class="empty-state">
+          <h2>No PDF open</h2>
+          <p>Choose a file from your computer to start reading.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/src/main.js" type="module"></script>
+  </body>
+</html>

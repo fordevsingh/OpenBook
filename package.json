@@ -1,0 +1,11 @@
+{
+  "name": "openbook",
+  "version": "1.0.0",
+  "description": "A local-first PDF reader built with HTML, CSS, JavaScript, and PDF.js.",
+  "scripts": {
+    "start": "vite"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
