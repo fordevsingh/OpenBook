@@ -7,44 +7,164 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div>
-        <h1>OpenBook</h1>
-        <p>Read local PDFs privately in your browser.</p>
+    <div class="app-container">
+      <!-- Collapsible Sidebar -->
+      <aside class="sidebar collapsed" id="sidebar">
+        <div class="sidebar-header">
+          <h2>Navigation</h2>
+          <button id="closeSidebar" class="icon-button" aria-label="Close Sidebar" title="Close Sidebar">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <nav class="sidebar-tabs" aria-label="Sidebar sections">
+          <button class="tab-btn active" data-tab="recent">Files</button>
+          <button class="tab-btn" data-tab="outline">Outline</button>
+          <button class="tab-btn" data-tab="bookmarks">Bookmarks</button>
+        </nav>
+
+        <div class="sidebar-content">
+          <!-- Recent Files Panel -->
+          <div class="tab-panel active" id="panel-recent">
+            <div class="panel-empty">
+              <p>No recently opened files.</p>
+            </div>
+            <ul class="recent-list" id="recentList"></ul>
+          </div>
+
+          <!-- Document Outline Panel -->
+          <div class="tab-panel" id="panel-outline">
+            <div class="panel-empty" id="outlineEmpty">
+              <p>No document outline available.</p>
+            </div>
+            <div class="outline-tree" id="outlineTree"></div>
+          </div>
+
+          <!-- Document Bookmarks Panel -->
+          <div class="tab-panel" id="panel-bookmarks">
+            <div class="panel-empty" id="bookmarksEmpty">
+              <p>No bookmarks on this document.</p>
+            </div>
+            <ul class="bookmarks-list" id="bookmarksList"></ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <div class="main-content">
+        <header class="app-header">
+          <div class="header-left">
+            <button id="toggleSidebar" class="icon-button" aria-label="Toggle Sidebar" title="Toggle Sidebar">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+            <div>
+              <h1 id="appTitle">OpenBook</h1>
+              <p id="appSubtitle">Read local PDFs privately in your browser.</p>
+            </div>
+          </div>
+
+          <button class="theme-toggle" id="themeToggle" type="button">
+            Dark mode
+          </button>
+        </header>
+
+        <main class="app-shell">
+          <section class="controls" aria-label="PDF controls">
+            <div class="controls-left">
+              <label class="file-picker">
+                <span>Open PDF</span>
+                <input id="fileInput" type="file" accept="application/pdf" />
+              </label>
+              <button id="bookmarkPageBtn" class="icon-button" title="Bookmark current page" aria-label="Bookmark page" disabled>
+                <svg class="star-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </button>
+            </div>
+
+            <div class="controls-center page-controls">
+              <button id="prevPageBtn" type="button" aria-label="Previous Page" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <div class="page-number-container">
+                <input id="pageInput" type="number" min="1" value="1" aria-label="Current Page Number" disabled />
+                <span class="page-slash">/</span>
+                <span id="pageCount">0</span>
+              </div>
+              <button id="nextPageBtn" type="button" aria-label="Next Page" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <div class="controls-right zoom-controls">
+              <button id="zoomOutBtn" type="button" aria-label="Zoom Out" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <span id="zoomLabel">100%</span>
+              <button id="zoomInBtn" type="button" aria-label="Zoom In" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <button id="zoomResetBtn" type="button" disabled>Reset</button>
+            </div>
+          </section>
+
+          <section class="viewer" id="viewer" aria-label="PDF viewer">
+            <div class="empty-state" id="emptyState">
+              <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="8" y1="13" x2="16" y2="13"></line>
+                <line x1="8" y1="17" x2="16" y2="17"></line>
+                <line x1="10" y1="9" x2="8" y2="9"></line>
+              </svg>
+              <h2>No PDF open</h2>
+              <p>Choose a file from your computer or pick a recent document in the sidebar to start reading.</p>
+              <button id="loadSampleBtn" type="button" class="file-picker" style="margin-top: 12px; font-weight: 700;">
+                Load Sample PDF
+              </button>
+            </div>
+
+            <div class="pdf-container" id="pdfContainer">
+              <canvas id="pdfCanvas"></canvas>
+            </div>
+
+            <div class="loading-overlay" id="loadingOverlay">
+              <div class="spinner"></div>
+              <span id="loadingMessage">Loading document...</span>
+            </div>
+          </section>
+        </main>
       </div>
+    </div>
 
-      <button class="theme-toggle" id="themeToggle" type="button">
-        Dark mode
-      </button>
-    </header>
-
-    <main class="app-shell">
-      <section class="controls" aria-label="PDF controls">
-        <label class="file-picker">
-          <span>Open PDF</span>
-          <input id="fileInput" type="file" accept="application/pdf" />
-        </label>
-
-        <div class="page-controls">
-          <button type="button" disabled>Previous</button>
-          <span>Page 0 of 0</span>
-          <button type="button" disabled>Next</button>
+    <!-- Custom Modal for adding/editing bookmark -->
+    <div class="modal-overlay" id="bookmarkModal">
+      <div class="modal">
+        <h3>Add Bookmark</h3>
+        <p>Enter a description for page <span id="bookmarkModalPageNum">1</span>:</p>
+        <input type="text" id="bookmarkModalInput" placeholder="Page Label (e.g., Chapter 1)" />
+        <div class="modal-actions">
+          <button id="bookmarkModalCancelBtn" type="button">Cancel</button>
+          <button id="bookmarkModalSaveBtn" type="button" class="file-picker">Save Bookmark</button>
         </div>
-
-        <div class="zoom-controls">
-          <button type="button" disabled>Zoom out</button>
-          <button type="button" disabled>Reset</button>
-          <button type="button" disabled>Zoom in</button>
-        </div>
-      </section>
-
-      <section class="viewer" aria-label="PDF viewer">
-        <div class="empty-state">
-          <h2>No PDF open</h2>
-          <p>Choose a file from your computer to start reading.</p>
-        </div>
-      </section>
-    </main>
+      </div>
+    </div>
 
     <script src="/src/main.js" type="module"></script>
   </body>
