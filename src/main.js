@@ -5,7 +5,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // IndexedDB Helper Functions
 const DB_NAME = 'OpenBookDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -20,6 +20,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('bookmarks')) {
         db.createObjectStore('bookmarks', { keyPath: 'name' });
+      }
+      if (!db.objectStoreNames.contains('notes')) {
+        db.createObjectStore('notes', { keyPath: 'name' });
       }
     };
     request.onsuccess = (e) => resolve(e.target.result);
@@ -95,6 +98,7 @@ async function addRecentFile(name, size, arrayBuffer) {
       await deleteFromStore('files', evictName);
       await deleteFromStore('metadata', evictName);
       await deleteFromStore('bookmarks', evictName);
+      await deleteFromStore('notes', evictName);
     }
   }
 }
@@ -140,6 +144,7 @@ async function loadPDF(arrayBuffer, fileName, initialPage = 1, initialZoom = 1.0
 
     await renderPage(currentPageNumber);
     await loadBookmarksUI();
+    await loadNotesUI();
     await loadOutlineUI();
     await loadRecentFilesUI();
   } catch (err) {
@@ -186,6 +191,7 @@ async function renderPage(pageNum) {
     // Update progress metadata and bookmarked star outline state
     await updateReadingProgress(currentFileName, currentPageNumber, currentZoom);
     await updateBookmarkButtonState();
+    await loadCurrentPageNote();
 
     showLoading(false);
   } catch (err) {
@@ -465,6 +471,147 @@ async function updateBookmarkButtonState() {
   }
 }
 
+// Local Notes: one private note per PDF page, stored in IndexedDB.
+async function getNotesForCurrentFile() {
+  if (!currentFileName) return [];
+  const notesData = await getFromStore('notes', currentFileName);
+  return notesData ? notesData.list : [];
+}
+
+async function saveCurrentPageNote() {
+  if (!pdfDoc || !currentFileName) return;
+
+  const input = document.getElementById('noteInput');
+  const text = input.value.trim();
+  const notesData = await getFromStore('notes', currentFileName) || { name: currentFileName, list: [] };
+  const existingIndex = notesData.list.findIndex((note) => note.page === currentPageNumber);
+
+  if (!text) {
+    if (existingIndex !== -1) {
+      notesData.list.splice(existingIndex, 1);
+      await saveToStore('notes', notesData);
+    }
+    setNoteSaveStatus('Note cleared');
+  } else {
+    const note = { page: currentPageNumber, text, updatedAt: Date.now() };
+    if (existingIndex === -1) notesData.list.push(note);
+    else notesData.list[existingIndex] = note;
+    await saveToStore('notes', notesData);
+    setNoteSaveStatus('Saved locally');
+  }
+
+  await loadNotesUI();
+  await loadCurrentPageNote();
+}
+
+async function deleteCurrentPageNote() {
+  if (!pdfDoc || !currentFileName) return;
+  const notesData = await getFromStore('notes', currentFileName);
+  if (!notesData) return;
+
+  const originalLength = notesData.list.length;
+  notesData.list = notesData.list.filter((note) => note.page !== currentPageNumber);
+  if (notesData.list.length !== originalLength) {
+    await saveToStore('notes', notesData);
+    setNoteSaveStatus('Note deleted');
+  }
+  await loadNotesUI();
+  await loadCurrentPageNote();
+}
+
+async function loadCurrentPageNote() {
+  const input = document.getElementById('noteInput');
+  const saveButton = document.getElementById('saveNoteBtn');
+  const deleteButton = document.getElementById('deleteCurrentNoteBtn');
+  const pageNumber = document.getElementById('notePageNumber');
+
+  if (!pdfDoc || !currentFileName) {
+    pageNumber.textContent = '—';
+    input.value = '';
+    input.disabled = true;
+    saveButton.disabled = true;
+    deleteButton.disabled = true;
+    return;
+  }
+
+  const notes = await getNotesForCurrentFile();
+  const note = notes.find((item) => item.page === currentPageNumber);
+  pageNumber.textContent = currentPageNumber;
+  input.value = note ? note.text : '';
+  input.disabled = false;
+  saveButton.disabled = false;
+  deleteButton.disabled = !note;
+}
+
+async function loadNotesUI() {
+  const container = document.getElementById('notesList');
+  const emptyPanel = document.getElementById('notesEmpty');
+  const count = document.getElementById('notesCount');
+  container.innerHTML = '';
+
+  if (!pdfDoc || !currentFileName) {
+    count.textContent = '0';
+    emptyPanel.style.display = 'block';
+    return;
+  }
+
+  const notes = await getNotesForCurrentFile();
+  notes.sort((a, b) => a.page - b.page);
+  count.textContent = notes.length;
+  emptyPanel.style.display = notes.length ? 'none' : 'block';
+
+  notes.forEach((note) => {
+    const item = document.createElement('li');
+    item.className = 'note-item';
+    item.tabIndex = 0;
+
+    const content = document.createElement('div');
+    content.className = 'note-content';
+    const title = document.createElement('span');
+    title.className = 'note-title';
+    title.textContent = `Page ${note.page}`;
+    const preview = document.createElement('p');
+    preview.className = 'note-preview';
+    preview.textContent = note.text;
+    content.append(title, preview);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.type = 'button';
+    deleteButton.title = `Delete note on page ${note.page}`;
+    deleteButton.setAttribute('aria-label', `Delete note on page ${note.page}`);
+    deleteButton.textContent = '×';
+    deleteButton.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      const notesData = await getFromStore('notes', currentFileName);
+      if (!notesData) return;
+      notesData.list = notesData.list.filter((item) => item.page !== note.page);
+      await saveToStore('notes', notesData);
+      await loadNotesUI();
+      await loadCurrentPageNote();
+    });
+
+    const goToNote = () => renderPage(note.page);
+    item.addEventListener('click', goToNote);
+    item.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        goToNote();
+      }
+    });
+    item.append(content, deleteButton);
+    container.appendChild(item);
+  });
+}
+
+function setNoteSaveStatus(message) {
+  const status = document.getElementById('noteSaveStatus');
+  status.textContent = message;
+  window.setTimeout(() => {
+    if (status.textContent === message) status.textContent = '';
+  }, 2000);
+}
+
 // Recent Files UI Panel Functions
 async function loadRecentFilesUI() {
   const container = document.getElementById('recentList');
@@ -515,6 +662,7 @@ async function loadRecentFilesUI() {
           await deleteFromStore('files', meta.name);
           await deleteFromStore('metadata', meta.name);
           await deleteFromStore('bookmarks', meta.name);
+          await deleteFromStore('notes', meta.name);
           loadRecentFilesUI();
           showLoading(false);
         }
@@ -534,10 +682,11 @@ async function loadRecentFilesUI() {
       </svg>
     `;
     delBtn.addEventListener('click', async () => {
-      if (confirm(`Remove "${meta.name}" from recent files? This will clear its saved progress and bookmarks.`)) {
+      if (confirm(`Remove "${meta.name}" from recent files? This will clear its saved progress, bookmarks, and notes.`)) {
         await deleteFromStore('files', meta.name);
         await deleteFromStore('metadata', meta.name);
         await deleteFromStore('bookmarks', meta.name);
+        await deleteFromStore('notes', meta.name);
         await loadRecentFilesUI();
 
         if (currentFileName === meta.name) {
@@ -562,6 +711,11 @@ function resetViewerToEmptyState() {
   document.getElementById('outlineEmpty').style.display = 'block';
   document.getElementById('bookmarksList').innerHTML = '';
   document.getElementById('bookmarksEmpty').style.display = 'block';
+  document.getElementById('notesList').innerHTML = '';
+  document.getElementById('notesEmpty').style.display = 'block';
+  document.getElementById('notesCount').textContent = '0';
+  document.getElementById('noteSaveStatus').textContent = '';
+  loadCurrentPageNote();
 }
 
 function showLoading(show, message = "Loading...") {
@@ -661,6 +815,8 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => changeZoom
 document.getElementById('zoomInBtn').addEventListener('click', () => changeZoom(0.25));
 document.getElementById('zoomResetBtn').addEventListener('click', () => changeZoom('reset'));
 document.getElementById('bookmarkPageBtn').addEventListener('click', toggleCurrentPageBookmark);
+document.getElementById('saveNoteBtn').addEventListener('click', saveCurrentPageNote);
+document.getElementById('deleteCurrentNoteBtn').addEventListener('click', deleteCurrentPageNote);
 
 const loadSampleBtn = document.getElementById('loadSampleBtn');
 if (loadSampleBtn) {
@@ -709,6 +865,10 @@ window.addEventListener('keydown', (e) => {
     changeZoom('reset');
   } else if (e.key.toLowerCase() === 'b') {
     toggleCurrentPageBookmark();
+  } else if (e.key.toLowerCase() === 'n') {
+    document.querySelector('[data-tab="notes"]').click();
+    if (sidebar.classList.contains('collapsed')) toggleSidebar();
+    document.getElementById('noteInput').focus();
   } else if (e.key.toLowerCase() === 's') {
     toggleSidebar();
   } else if (e.key.toLowerCase() === 'd') {

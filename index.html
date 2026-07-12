@@ -24,6 +24,7 @@
           <button class="tab-btn active" data-tab="recent">Files</button>
           <button class="tab-btn" data-tab="outline">Outline</button>
           <button class="tab-btn" data-tab="bookmarks">Bookmarks</button>
+          <button class="tab-btn" data-tab="notes">Notes</button>
         </nav>
 
         <div class="sidebar-content">
@@ -49,6 +50,29 @@
               <p>No bookmarks on this document.</p>
             </div>
             <ul class="bookmarks-list" id="bookmarksList"></ul>
+          </div>
+
+          <!-- Local, per-page notes panel -->
+          <div class="tab-panel" id="panel-notes">
+            <div class="notes-composer">
+              <div class="notes-heading">
+                <h3>Page <span id="notePageNumber">—</span></h3>
+                <span id="noteSaveStatus" class="note-save-status" aria-live="polite"></span>
+              </div>
+              <textarea id="noteInput" rows="6" placeholder="Open a PDF to write a private note." disabled></textarea>
+              <div class="notes-actions">
+                <button id="saveNoteBtn" type="button" class="file-picker" disabled>Save note</button>
+                <button id="deleteCurrentNoteBtn" type="button" class="text-button" disabled>Delete</button>
+              </div>
+            </div>
+            <div class="notes-list-header">
+              <h3>All notes</h3>
+              <span id="notesCount">0</span>
+            </div>
+            <div class="panel-empty" id="notesEmpty">
+              <p>No notes for this document yet.</p>
+            </div>
+            <ul class="notes-list" id="notesList"></ul>
           </div>
         </div>
       </aside>

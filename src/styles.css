@@ -140,7 +140,8 @@ body {
 
 /* Lists inside Sidebar */
 .recent-list,
-.bookmarks-list {
+.bookmarks-list,
+.notes-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -150,7 +151,8 @@ body {
 }
 
 .recent-item,
-.bookmark-item {
+.bookmark-item,
+.note-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -165,14 +167,17 @@ body {
 }
 
 .recent-item:hover,
-.bookmark-item:hover {
+.bookmark-item:hover,
+.note-item:hover,
+.note-item:focus-visible {
   border-color: var(--accent);
   background: var(--panel);
   transform: translateY(-1px);
 }
 
 .recent-info,
-.bookmark-info {
+.bookmark-info,
+.note-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -181,7 +186,8 @@ body {
 }
 
 .recent-name,
-.bookmark-name {
+.bookmark-name,
+.note-title {
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -193,6 +199,80 @@ body {
 .bookmark-meta {
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+/* Local notes */
+.notes-composer {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.notes-heading,
+.notes-list-header,
+.notes-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notes-heading h3,
+.notes-list-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.note-save-status,
+.notes-list-header span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+#noteInput {
+  width: 100%;
+  resize: vertical;
+  min-height: 112px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+#noteInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.notes-actions { justify-content: flex-end; }
+
+.text-button {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.text-button:hover:not(:disabled) { color: #dc2626; }
+
+.notes-list-header { margin-bottom: 10px; }
+
+.note-item { align-items: flex-start; }
+
+.note-preview {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Outline Tree Styles */
@@ -673,4 +753,3 @@ canvas {
 .modal-actions button {
   min-height: 38px;
 }
-
